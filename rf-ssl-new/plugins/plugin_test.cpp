@@ -44,63 +44,25 @@ void testPlugin::mousePressEvent(QMouseEvent *event, pixelloc loc)
 
     //m_c->push_back(loc);
     rgb * source_pointer = (rgb*)(source->getData());
-    double r = (int)source_pointer[loc.y * source -> getWidth() + loc.x].r;
-    double g = (int)source_pointer[loc.y * source -> getWidth() + loc.x].g;
-    double b = (int)source_pointer[loc.y * source -> getWidth() + loc.x].b;
+    int r = (int)source_pointer[loc.y * source -> getWidth() + loc.x].r;
+    int g = (int)source_pointer[loc.y * source -> getWidth() + loc.x].g;
+    int b = (int)source_pointer[loc.y * source -> getWidth() + loc.x].b;
 
-    int thresh = 20;
-    uchar cl[3] = {(int)b,(int)g,(int)r};
-    uchar cl_add1[3] = {min((int)b + thresh, 255),(int)g,(int)r};
-    uchar cl_add2[3] = {max((int)b - thresh, 0),(int)g,(int)r};
-    uchar cl_add3[3] = {(int)b,min((int)g + thresh, 255),(int)r};
-    uchar cl_add4[3] = {(int)b,max((int)g - thresh, 0),(int)r};
-    uchar cl_add5[3] = {(int)b,(int)g,min((int)r + thresh, 255)};
-    uchar cl_add6[3] = {(int)b,(int)g,max((int)r - thresh, 0)};
     switch(setColor)
     {
-        case 0: colorsForObjects[0].add(cl);
-                colorsForObjects[0].add(cl_add1);
-                colorsForObjects[0].add(cl_add2);
-                colorsForObjects[0].add(cl_add3);
-                colorsForObjects[0].add(cl_add4);
-                colorsForObjects[0].add(cl_add5);
-                colorsForObjects[0].add(cl_add6);
+        case 0: colorsForObjects[0].add(r,g,b);
                 cout << "Add (" << r << ", " << g << ", " << b << ") as blue" << endl;
                 break;
-        case 1: colorsForObjects[1].add(cl);
-                colorsForObjects[1].add(cl_add1);
-                colorsForObjects[1].add(cl_add2);
-                colorsForObjects[1].add(cl_add3);
-                colorsForObjects[1].add(cl_add4);
-                colorsForObjects[1].add(cl_add5);
-                colorsForObjects[1].add(cl_add6);
+        case 1: colorsForObjects[1].add(r,g,b);
                 cout << "Add (" << r << ", " << g << ", " << b << ") as yellow" << endl;
                 break;
-        case 2: colorsForObjects[2].add(cl);
-                colorsForObjects[2].add(cl_add1);
-                colorsForObjects[2].add(cl_add2);
-                colorsForObjects[2].add(cl_add3);
-                colorsForObjects[2].add(cl_add4);
-                colorsForObjects[2].add(cl_add5);
-                colorsForObjects[2].add(cl_add6);
+        case 2: colorsForObjects[2].add(r,g,b);
                 cout << "Add (" << r << ", " << g << ", " << b << ") as pink" << endl;
                 break;
-        case 3: colorsForObjects[3].add(cl);
-                colorsForObjects[3].add(cl_add1);
-                colorsForObjects[3].add(cl_add2);
-                colorsForObjects[3].add(cl_add3);
-                colorsForObjects[3].add(cl_add4);
-                colorsForObjects[3].add(cl_add5);
-                colorsForObjects[3].add(cl_add6);
+        case 3: colorsForObjects[3].add(r,g,b);
                 cout << "Add (" << r << ", " << g << ", " << b << ") as green" << endl;
                 break;
-        case 4: colorsForObjects[4].add(cl);
-                colorsForObjects[4].add(cl_add1);
-                colorsForObjects[4].add(cl_add2);
-                colorsForObjects[4].add(cl_add3);
-                colorsForObjects[4].add(cl_add4);
-                colorsForObjects[4].add(cl_add5);
-                colorsForObjects[4].add(cl_add6);
+        case 4: colorsForObjects[4].add(r,g,b);
                 cout << "Add (" << r << ", " << g << ", " << b << ") as orange" << endl;
                 break;
         case 5: if (numberOfCountedPoints == 0)
@@ -199,7 +161,7 @@ ProcessResult testPlugin::process(FrameData * data, RenderOptions * options)
         clock_t start = std::clock();
 
         if (isFullImageAlgorithm)
-            imProc -> getStartData(source, covs, cols, mask, left, top, right, bottom);
+            imProc -> getStartData(source, colorsForObjects, left, top, right, bottom);
         else
             imProc -> getNewData(&blueTeam, &yellowTeam, &currentBall, source);
 
@@ -283,37 +245,6 @@ void testPlugin::calibClick(){
 void testPlugin::startProcess(){
     lock();
     isFirstRun = false;
-    for (int i = 0; i < 5; i++)
-    {
-        try
-        {
-            Mat clrs(colorsForObjects[i].used,3,CV_8U);
-
-            uchar * color_ptr=clrs.data;
-            int color_size=colorsForObjects[i].used;
-            for (int j=0;j<color_size;++j)
-            {
-                color_ptr[3*j]=colorsForObjects[i].bgr[j][0];
-                color_ptr[3*j+1]=colorsForObjects[i].bgr[j][1];
-                color_ptr[3*j+2]=colorsForObjects[i].bgr[j][2];
-            }
-            Mat cov,mu;
-            calcCovarMatrix(clrs, cov, mu, CV_COVAR_NORMAL|CV_COVAR_ROWS|CV_COVAR_SCALE);
-            cov.at<double>(0,0) += 0.01;
-            cov.at<double>(1,1) += 0.01;
-            cov.at<double>(2,2) += 0.01;
-
-            covs[i] = cov.inv();
-            cols[i] = colorsForObjects[i].getAverageVector();
-            mask[i] = true;
-        }
-        catch(...)
-        {
-            cout << "Something going wrong with color " << i << endl;
-            mask[i] = false;
-        }
-    }
-
     unlock();
 }
 
@@ -1846,65 +1777,83 @@ void imageProcessing::getNewData(std::deque<RobotFeatures> *blueTeam, std::deque
 }
 
 //Help find colors for FullImage Algorithm(!)
-void imageProcessing::calibrate(bool isFirstAlgorithm, ImageInterface* source, Color* colors)
+void imageProcessing::calibrate(bool isFirstAlgorithm, ImageInterface* source, FColor* colors)
 {
     if (isFirstAlgorithm)
     {
-
         this -> source = source;
         source_pointer = (rgb*)(source->getData());
         int width = source -> getWidth();
         int height = source -> getHeight();
-
+        Mat img = Mat::zeros(height, width,CV_8UC3);
+        uchar* mat = img.data;
+        for (int i = 0; i < height; i++)
+            for (int j = 0; j < width; j++)
+            {
+                mat[3 *(i * width + j) + 2] = source_pointer[i*width+j].r;
+                mat[3 *(i * width + j) + 1] = source_pointer[i*width+j].g;
+                mat[3 *(i * width + j) + 0] = source_pointer[i*width+j].b;
+            }
+        blur(img,img,Size(3,3));
         for (int i=0;i<height;++i)
             for (int j=0;j<width;++j)
             {
+                int r = (int)mat[3 *(i * width + j) + 2];
+                int g = (int)mat[3 *(i * width + j) + 1];
+                int b = (int)mat[3 *(i * width + j) + 0];
                 //blue
-                if (colorsAreNear(source_pointer, i * width + j, colors[0]))
+                if (colors[0].contains(r,g,b))
                 {
-//                    source_pointer[i*width+j].r = 0;
-//                    source_pointer[i*width+j].g = 0;
-//                    source_pointer[i*width+j].b = 255;
+                    mat[3 *(i * width + j) + 2] = 0;
+                    mat[3 *(i * width + j) + 1] = 0;
+                    mat[3 *(i * width + j) + 0] = 255;
                 }
 
                 //yellow
-                if (colorsAreNear(source_pointer, i * width + j, colors[1]))
+                if (colors[1].contains(r,g,b))
                 {
-//                    source_pointer[i*width+j].r = 255;
-//                    source_pointer[i*width+j].g = 255;
-//                    source_pointer[i*width+j].b = 0;
+                    mat[3 *(i * width + j) + 2] = 255;
+                    mat[3 *(i * width + j) + 1] = 255;
+                    mat[3 *(i * width + j) + 0] = 0;
                 }
 
                 //pink
-                if (colorsAreNear(source_pointer, i * width + j, colors[2]))
+                if (colors[2].contains(r,g,b))
                 {
-//                    source_pointer[i*width+j].r = 255;
-//                    source_pointer[i*width+j].g = 0;
-//                    source_pointer[i*width+j].b = 0;
+                    mat[3 *(i * width + j) + 2] = 255;
+                    mat[3 *(i * width + j) + 1] = 0;
+                    mat[3 *(i * width + j) + 0] = 0;
                 }
 
                 //green
-                if (colorsAreNear(source_pointer, i * width + j, colors[3]))
+                if (colors[3].contains(r,g,b))
                 {
-//                    source_pointer[i*width+j].r = 0;
-//                    source_pointer[i*width+j].g = 255;
-//                    source_pointer[i*width+j].b = 0;
+                    mat[3 *(i * width + j) + 2] = 0;
+                    mat[3 *(i * width + j) + 1] = 255;
+                    mat[3 *(i * width + j) + 0] = 0;
                 }
 
                 //orange
-                if (colorsAreNear(source_pointer, i * width + j, colors[4]))
+                if (colors[4].contains(r,g,b))
                 {
-                    //source_pointer[i*width+j].r = 255;
-                    //source_pointer[i*width+j].g = 128;
-                    //source_pointer[i*width+j].b = 0;
+                    mat[3 *(i * width + j) + 2] = 255;
+                    mat[3 *(i * width + j) + 1] = 128;
+                    mat[3 *(i * width + j) + 0] = 0;
                 }
+            }
+        for (int i = 0; i < height; i++)
+            for (int j = 0; j < width; j++)
+            {
+                source_pointer[i*width+j].r = mat[3 *(i * width + j) + 2];
+                source_pointer[i*width+j].g = mat[3 *(i * width + j) + 1];
+                source_pointer[i*width+j].b = mat[3 *(i * width + j) + 0];
             }
     }
 }
 
 
 //Find centers of robots and ball for full image 640x480
-void imageProcessing::getStartData(ImageInterface* source, Mat* covs, Mat* cols, bool* mask, int left, int top, int right, int bottom)
+void imageProcessing::getStartData(ImageInterface* source, FColor* colorsOfObjects, int left, int top, int right, int bottom)
 {
     omp_set_num_threads(numberOfThreads);
     this -> source = source;
@@ -1925,73 +1874,21 @@ void imageProcessing::getStartData(ImageInterface* source, Mat* covs, Mat* cols,
     int* colors = new int[height * width];
     blur(imageBuffer,imageBuffer,Size(3,3));
 
-    Mat cov(3,3,CV_64F);
-    Mat col(1,3,CV_64F);
-    Mat res;
+    #pragma omp parallel for
     for (int i=top;i<bottom;++i)
-        //#pragma omp parallel for
         for (int j=left;j<right;++j)
         {
-            double min=6;
-            int res_col;
-            double curr;
-            for (int k=0;k<5;++k)
-            {
-                try
-                {
-                    if (mask[k])
-                    {
-                        col.at<double>(0,0)=cols[k].at<double>(0,0)-(double)mat[3 * (i * width + j) + 0];
-                        col.at<double>(0,1)=cols[k].at<double>(0,1)-(double)mat[3 * (i * width + j) + 1];
-                        col.at<double>(0,2)=cols[k].at<double>(0,2)-(double)mat[3 * (i * width + j) + 2];
-                        res=col*covs[k]*col.t();
-                        curr=res.at<double>(0,0);
-                        if (curr<min)
-                        {
-                            min=curr;
-                            res_col=k;
-                        }
-                    }
-                }
-                catch(...)
-                {
+            int r = mat[3*(i*width+j)+2];
+            int g = mat[3*(i*width+j)+1];
+            int b = mat[3*(i*width+j)+0];
 
-                }
-            }
-            if (min<6)
-            {
-
-                colors[i * width + j] = res_col;
-                /*switch(res_col)
+            colors[i * width + j] = -1;
+            for (int k = 0; k < 5; k++)
+                if (colorsOfObjects[k].contains(r,g,b))
                 {
-                    case 0:
-                        mat[3 * (i*width+j) + 2] = 0;
-                        mat[3 * (i*width+j) + 1] = 0;
-                        mat[3 * (i*width+j) + 0] = 255;
-                        break;
-                    case 1:
-                        mat[3 * (i*width+j) + 2] = 255;
-                        mat[3 * (i*width+j) + 1] = 255;
-                        mat[3 * (i*width+j) + 0] = 0;
-                        break;
-                    case 2:
-                        mat[3 * (i*width+j) + 2] = 255;
-                        mat[3 * (i*width+j) + 1] = 0;
-                        mat[3 * (i*width+j) + 0] = 0;
-                        break;
-                    case 3:
-                        mat[3 * (i*width+j) + 2] = 0;
-                        mat[3 * (i*width+j) + 1] = 255;
-                        mat[3 * (i*width+j) + 0] = 0;
-                        break;
-                    case 4:
-                        mat[3 * (i*width+j) + 2] = 255;
-                        mat[3 * (i*width+j) + 1] = 128;
-                        mat[3 * (i*width+j) + 0] = 0;
-                }*/
-            }
-            else
-                colors[i * width + j] =-1;
+                    colors[i * width + j] = k;
+                    break;
+                }
         }
 
     int* resultOfVoting = new int[height * width];

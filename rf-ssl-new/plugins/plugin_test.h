@@ -348,6 +348,59 @@ public:
     BallFeatures() {exists = false; x = 0; y = 0; color = Scalar(0, 0, 0);}
 };
 
+class FColor
+{
+    bool red[256];
+    bool green[256];
+    bool blue[256];
+    int minR;
+    int maxR;
+    int minG;
+    int maxG;
+    int minB;
+    int maxB;
+    int thresh;
+public:
+    FColor() : minR(256),maxR(-1),minG(256),maxG(-1),minB(256),maxB(-1), thresh(10)
+    {
+        for (int i = 0; i < 256; i++)
+        {
+            red[i] = false;
+            green[i] = false;
+            blue[i] = false;
+        }
+    }
+
+    void add(int r, int g, int b)
+    {
+        int minC = max(min(minR, r) - thresh, 0);
+        int maxC = min(max(maxR, r) + thresh, 255);
+        for (int i = minC; i <= maxC; i++)
+            red[i] = true;
+        minR = minC;
+        maxR = maxC;
+
+        minC = max(min(minG, g) - thresh, 0);
+        maxC = min(max(maxG, g) + thresh, 255);
+        for (int i = minC; i <= maxC; i++)
+            green[i] = true;
+        minG = minC;
+        maxG = maxC;
+
+        minC = max(min(minB, b) - thresh, 0);
+        maxC = min(max(maxB, b) + thresh, 255);
+        for (int i = minC; i <= maxC; i++)
+            blue[i] = true;
+        minB = minC;
+        maxB = maxC;
+    }
+
+    inline bool contains(int r, int g, int b)
+    {
+        return red[r] & green[g] & blue[b];
+    }
+};
+
 class imageProcessing
 {
 private:
@@ -372,8 +425,8 @@ public:
     inline bool colorsAreNear(rgb* source_pointer, int currentElement, Color color2);
     inline bool imageProcessing::colorsAreNear(rgb* source_pointer, int currentElement, deque<Scalar> color2);
     inline bool isBoardOfRegion(uchar* mat, int i, int j, int width, Scalar color2);
-    void calibrate(bool isFirstAlgorithm, ImageInterface* source, Color* colors);
-    void getStartData(ImageInterface* source, Mat* covs, Mat* cols, bool* mask, int left, int top, int right, int bottom);
+    void calibrate(bool isFirstAlgorithm, ImageInterface* source, FColor* colors);
+    void getStartData(ImageInterface* source, FColor* colors, int left, int top, int right, int bottom);
     ~imageProcessing();
 };
 
@@ -414,7 +467,7 @@ public:
   int max_balls;
   ImageInterface * source;
 
-  Color colorsForObjects[5];
+  FColor colorsForObjects[5];
   Mat cols[5];
   Mat covs[5];
   bool mask[5];
