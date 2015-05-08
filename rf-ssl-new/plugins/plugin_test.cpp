@@ -50,64 +50,57 @@ void testPlugin::mousePressEvent(QMouseEvent *event, pixelloc loc)
 
     int thresh = 20;
     uchar cl[3] = {(int)b,(int)g,(int)r};
-//    uchar cl_add1[3] = {min((int)b + thresh, 255),(int)g,(int)r};
-//    uchar cl_add2[3] = {max((int)b - thresh, 0),(int)g,(int)r};
-//    uchar cl_add3[3] = {(int)b,min((int)g + thresh, 255),(int)r};
-//    uchar cl_add4[3] = {(int)b,max((int)g - thresh, 0),(int)r};
-//    uchar cl_add5[3] = {(int)b,(int)g,min((int)r + thresh, 255)};
-//    uchar cl_add6[3] = {(int)b,(int)g,max((int)r - thresh, 0)};
-//    cout << "!" << (int)cl[0] << " " << (int)cl[1] << " " << (int)cl[2] << endl;
-//    cout << "!" << (int)cl_add1[0] << " " << (int)cl_add1[1] << " " << (int)cl_add1[2] << endl;
-//    cout << "!" << (int)cl_add2[0] << " " << (int)cl_add2[1] << " " << (int)cl_add2[2] << endl;
-//    cout << "!" << (int)cl_add3[0] << " " << (int)cl_add3[1] << " " << (int)cl_add3[2] << endl;
-//    cout << "!" << (int)cl_add4[0] << " " << (int)cl_add4[1] << " " << (int)cl_add4[2] << endl;
-//    cout << "!" << (int)cl_add5[0] << " " << (int)cl_add5[1] << " " << (int)cl_add5[2] << endl;
-//    cout << "!" << (int)cl_add6[0] << " " << (int)cl_add6[1] << " " << (int)cl_add6[2] << endl;
+    uchar cl_add1[3] = {min((int)b + thresh, 255),(int)g,(int)r};
+    uchar cl_add2[3] = {max((int)b - thresh, 0),(int)g,(int)r};
+    uchar cl_add3[3] = {(int)b,min((int)g + thresh, 255),(int)r};
+    uchar cl_add4[3] = {(int)b,max((int)g - thresh, 0),(int)r};
+    uchar cl_add5[3] = {(int)b,(int)g,min((int)r + thresh, 255)};
+    uchar cl_add6[3] = {(int)b,(int)g,max((int)r - thresh, 0)};
     switch(setColor)
     {
         case 0: colorsForObjects[0].add(cl);
-//                colorsForObjects[0].add(cl_add1);
-//                colorsForObjects[0].add(cl_add2);
-//                colorsForObjects[0].add(cl_add3);
-//                colorsForObjects[0].add(cl_add4);
-//                colorsForObjects[0].add(cl_add5);
-//                colorsForObjects[0].add(cl_add6);
+                colorsForObjects[0].add(cl_add1);
+                colorsForObjects[0].add(cl_add2);
+                colorsForObjects[0].add(cl_add3);
+                colorsForObjects[0].add(cl_add4);
+                colorsForObjects[0].add(cl_add5);
+                colorsForObjects[0].add(cl_add6);
                 cout << "Add (" << r << ", " << g << ", " << b << ") as blue" << endl;
                 break;
         case 1: colorsForObjects[1].add(cl);
-//                colorsForObjects[1].add(cl_add1);
-//                colorsForObjects[1].add(cl_add2);
-//                colorsForObjects[1].add(cl_add3);
-//                colorsForObjects[1].add(cl_add4);
-//                colorsForObjects[1].add(cl_add5);
-//                colorsForObjects[1].add(cl_add6);
+                colorsForObjects[1].add(cl_add1);
+                colorsForObjects[1].add(cl_add2);
+                colorsForObjects[1].add(cl_add3);
+                colorsForObjects[1].add(cl_add4);
+                colorsForObjects[1].add(cl_add5);
+                colorsForObjects[1].add(cl_add6);
                 cout << "Add (" << r << ", " << g << ", " << b << ") as yellow" << endl;
                 break;
-        case 2: colorsForObjects[2].add(cl);  
-//                colorsForObjects[2].add(cl_add1);
-//                colorsForObjects[2].add(cl_add2);
-//                colorsForObjects[2].add(cl_add3);
-//                colorsForObjects[2].add(cl_add4);
-//                colorsForObjects[2].add(cl_add5);
-//                colorsForObjects[2].add(cl_add6);
+        case 2: colorsForObjects[2].add(cl);
+                colorsForObjects[2].add(cl_add1);
+                colorsForObjects[2].add(cl_add2);
+                colorsForObjects[2].add(cl_add3);
+                colorsForObjects[2].add(cl_add4);
+                colorsForObjects[2].add(cl_add5);
+                colorsForObjects[2].add(cl_add6);
                 cout << "Add (" << r << ", " << g << ", " << b << ") as pink" << endl;
                 break;
         case 3: colorsForObjects[3].add(cl);
-//                colorsForObjects[3].add(cl_add1);
-//                colorsForObjects[3].add(cl_add2);
-//                colorsForObjects[3].add(cl_add3);
-//                colorsForObjects[3].add(cl_add4);
-//                colorsForObjects[3].add(cl_add5);
-//                colorsForObjects[3].add(cl_add6);
+                colorsForObjects[3].add(cl_add1);
+                colorsForObjects[3].add(cl_add2);
+                colorsForObjects[3].add(cl_add3);
+                colorsForObjects[3].add(cl_add4);
+                colorsForObjects[3].add(cl_add5);
+                colorsForObjects[3].add(cl_add6);
                 cout << "Add (" << r << ", " << g << ", " << b << ") as green" << endl;
                 break;
-        case 4: colorsForObjects[4].add(cl); 
-//                colorsForObjects[4].add(cl_add1);
-//                colorsForObjects[4].add(cl_add2);
-//                colorsForObjects[4].add(cl_add3);
-//                colorsForObjects[4].add(cl_add4);
-//                colorsForObjects[4].add(cl_add5);
-//                colorsForObjects[4].add(cl_add6);
+        case 4: colorsForObjects[4].add(cl);
+                colorsForObjects[4].add(cl_add1);
+                colorsForObjects[4].add(cl_add2);
+                colorsForObjects[4].add(cl_add3);
+                colorsForObjects[4].add(cl_add4);
+                colorsForObjects[4].add(cl_add5);
+                colorsForObjects[4].add(cl_add6);
                 cout << "Add (" << r << ", " << g << ", " << b << ") as orange" << endl;
                 break;
         case 5: if (numberOfCountedPoints == 0)
@@ -207,8 +200,8 @@ ProcessResult testPlugin::process(FrameData * data, RenderOptions * options)
 
         if (isFullImageAlgorithm)
             imProc -> getStartData(source, covs, cols, mask, left, top, right, bottom);
-        //else
-            //imProc -> getNewData(&blueTeam, &yellowTeam, &currentBall, source);
+        else
+            imProc -> getNewData(&blueTeam, &yellowTeam, &currentBall, source);
 
         double duration = ( std::clock() - start ) / (double) CLOCKS_PER_SEC;
         cout << duration << endl;
@@ -1438,6 +1431,7 @@ imageProcessing::imageProcessing(int radiusOfVotingForCentralCircle, int radiusO
     this -> radiusOfVotingForCentralCircle = radiusOfVotingForCentralCircle;
     this -> radiusOfVotingForSideCircles = radiusOfVotingForSideCircles;
     this -> threshold = 25;
+    numberOfThreads = 2;
     frameNumber = 0;
 }
 
@@ -1526,6 +1520,7 @@ void imageProcessing::getNewData(std::deque<RobotFeatures> *listOfRobots, int cu
     Mat img=Mat::zeros(height, width,CV_8UC3);
     uchar* mat = img.data;
 
+    #pragma omp parallel for
     for (int i=top;i<=bottom;++i)
         for (int j=left;j<=right;++j)
         {
@@ -1536,6 +1531,7 @@ void imageProcessing::getNewData(std::deque<RobotFeatures> *listOfRobots, int cu
 
 
     double **newColorsRecorder = new double*[(int)(listOfRobots->at(cur).colorOfRegions.size())];
+    #pragma omp parallel for
     for (int i = 0; i < (int)(listOfRobots->at(cur).colorOfRegions.size()); i++)
     {
         newColorsRecorder[i] = new double[4];
@@ -1547,6 +1543,7 @@ void imageProcessing::getNewData(std::deque<RobotFeatures> *listOfRobots, int cu
 
     int* resultOfVoting = new int[height * width];
 
+    #pragma omp parallel for
     for (int i = 0; i < height; i++)
         for (int j = 0; j < width; j++)
             resultOfVoting[i * width + j] = 0;
@@ -1631,6 +1628,7 @@ void imageProcessing::getNewData(std::deque<RobotFeatures> *listOfRobots, int cu
     }
 
     bool angles[360];
+    #pragma omp parallel for
     for (int i = 0; i < 360; i++)
         angles[i] = false;
 
@@ -1715,6 +1713,7 @@ void imageProcessing::getNewData(BallFeatures *ballData)
     Mat img=Mat::zeros(height, width,CV_8UC3);
     uchar* mat = img.data;
 
+    #pragma omp parallel for
     for (int i=top;i<=bottom;++i)
         for (int j=left;j<=right;++j)
         {
@@ -1730,6 +1729,8 @@ void imageProcessing::getNewData(BallFeatures *ballData)
     newColorRecorder[3] = 0;
 
     int* resultOfVoting = new int[height * width];
+
+    #pragma omp parallel for
     for (int i = 0; i < height; i++)
         for (int j = 0; j < width; j++)
             resultOfVoting[i * width + j] = 0;
@@ -1799,45 +1800,50 @@ void imageProcessing::getNewData(BallFeatures *ballData)
 }
 
 //Find coordinates and angle for both teams of robots (already existed) and ball
-//void imageProcessing::getNewData(std::deque<RobotFeatures> *blueTeam, std::deque<RobotFeatures> *yellowTeam, BallFeatures *ballData, ImageInterface *source)
-//{
-//    this -> source = source;
-//    imageBuffer = Mat::zeros(source -> getHeight(),source -> getWidth(),CV_8UC3);
-//    uchar* mat = imageBuffer.data;
+void imageProcessing::getNewData(std::deque<RobotFeatures> *blueTeam, std::deque<RobotFeatures> *yellowTeam, BallFeatures *ballData, ImageInterface *source)
+{
+    omp_set_num_threads(numberOfThreads);
+    this -> source = source;
+    imageBuffer = Mat::zeros(source -> getHeight(),source -> getWidth(),CV_8UC3);
+    uchar* mat = imageBuffer.data;
 
-//    source_pointer = (rgb*)(source->getData());
+    source_pointer = (rgb*)(source->getData());
 
-//    for (int i=0;i<480;++i)
-//        for (int j=0;j<640;++j)
-//        {
-//            mat[3*(i*640+j)+2]=source_pointer[i*source->getWidth()+j].r;
-//            mat[3*(i*640+j)+1]=source_pointer[i*source->getWidth()+j].g;
-//            mat[3*(i*640+j)+0]=source_pointer[i*source->getWidth()+j].b;
-//        }
-//    if (ballData->exists)
-//        getNewData(ballData);
 
-//    for (int i = 0; i < (int)(blueTeam -> size()); i++)
-//       getNewData(blueTeam, i);
+    #pragma omp parallel for
+    for (int i=0;i<480;++i)
+        for (int j=0;j<640;++j)
+        {
+            mat[3*(i*640+j)+2]=source_pointer[i*source->getWidth()+j].r;
+            mat[3*(i*640+j)+1]=source_pointer[i*source->getWidth()+j].g;
+            mat[3*(i*640+j)+0]=source_pointer[i*source->getWidth()+j].b;
+        }
+    if (ballData->exists)
+        getNewData(ballData);
 
-//    for (int i = 0; i < (int)(yellowTeam -> size()); i++)
-//        getNewData(yellowTeam, i);
+    for (int i = 0; i < (int)(blueTeam -> size()); i++)
+       getNewData(blueTeam, i);
 
-//    for (int i=0;i<480;++i)
-//        for (int j=0;j<640;++j)
-//        {
-//            source_pointer[i*source->getWidth()+j].r= mat[3*(i*640+j)+2];
-//            source_pointer[i*source->getWidth()+j].g= mat[3*(i*640+j)+1];
-//            source_pointer[i*source->getWidth()+j].b= mat[3*(i*640+j)+0];
-//        }
-//    stringstream ss;
-//    ss << frameNumber;
-//    string str = ss.str();
-//    string name = string("record/") + str + string(".png");
+    for (int i = 0; i < (int)(yellowTeam -> size()); i++)
+        getNewData(yellowTeam, i);
 
-//    cvSaveImage(name.c_str(), &(IplImage(imageBuffer)));
-//    frameNumber++;
-//}
+
+    #pragma omp parallel for
+    for (int i=0;i<480;++i)
+        for (int j=0;j<640;++j)
+        {
+            source_pointer[i*source->getWidth()+j].r= mat[3*(i*640+j)+2];
+            source_pointer[i*source->getWidth()+j].g= mat[3*(i*640+j)+1];
+            source_pointer[i*source->getWidth()+j].b= mat[3*(i*640+j)+0];
+        }
+    stringstream ss;
+    ss << frameNumber;
+    string str = ss.str();
+    string name = string("record/") + str + string(".png");
+
+    cvSaveImage(name.c_str(), &(IplImage(imageBuffer)));
+    frameNumber++;
+}
 
 //Help find colors for FullImage Algorithm(!)
 void imageProcessing::calibrate(bool isFirstAlgorithm, ImageInterface* source, Color* colors)
@@ -1900,15 +1906,16 @@ void imageProcessing::calibrate(bool isFirstAlgorithm, ImageInterface* source, C
 //Find centers of robots and ball for full image 640x480
 void imageProcessing::getStartData(ImageInterface* source, Mat* covs, Mat* cols, bool* mask, int left, int top, int right, int bottom)
 {
-    omp_set_num_threads(2);
+    omp_set_num_threads(numberOfThreads);
     this -> source = source;
     source_pointer = (rgb*)(source->getData());
     int width = source -> getWidth();
     int height = source -> getHeight();
     imageBuffer = Mat::zeros(height, width,CV_8UC3);
     uchar* mat = imageBuffer.data;
+
+    #pragma omp parallel for
     for (int i=0;i<height;++i)
-        #pragma omp parallel for
         for (int j=0;j<width;++j)
         {
             mat[3*(i*width+j)+2]=source_pointer[i*width+j].r;
@@ -1917,15 +1924,16 @@ void imageProcessing::getStartData(ImageInterface* source, Mat* covs, Mat* cols,
         }
     int* colors = new int[height * width];
     blur(imageBuffer,imageBuffer,Size(3,3));
+
+    Mat cov(3,3,CV_64F);
+    Mat col(1,3,CV_64F);
+    Mat res;
     for (int i=top;i<bottom;++i)
         //#pragma omp parallel for
         for (int j=left;j<right;++j)
         {
             double min=6;
             int res_col;
-            Mat cov(3,3,CV_64F);
-            Mat col(1,3,CV_64F);
-            Mat res;
             double curr;
             for (int k=0;k<5;++k)
             {
@@ -1954,7 +1962,7 @@ void imageProcessing::getStartData(ImageInterface* source, Mat* covs, Mat* cols,
             {
 
                 colors[i * width + j] = res_col;
-                switch(res_col)
+                /*switch(res_col)
                 {
                     case 0:
                         mat[3 * (i*width+j) + 2] = 0;
@@ -1980,16 +1988,17 @@ void imageProcessing::getStartData(ImageInterface* source, Mat* covs, Mat* cols,
                         mat[3 * (i*width+j) + 2] = 255;
                         mat[3 * (i*width+j) + 1] = 128;
                         mat[3 * (i*width+j) + 0] = 0;
-                }
+                }*/
             }
             else
                 colors[i * width + j] =-1;
         }
 
-    /*int* resultOfVoting = new int[height * width];
+    int* resultOfVoting = new int[height * width];
     int* resultOfVotingForBall = new int[height * width];
+
+    #pragma omp parallel for
     for (int i = 0; i < height; i++)
-        #pragma omp parallel for
         for (int j = 0; j < width; j++)
         {
             resultOfVoting[i * width + j] = 0;
@@ -2109,10 +2118,10 @@ void imageProcessing::getStartData(ImageInterface* source, Mat* covs, Mat* cols,
         double y = centersOfBalls.at(i)[1];
         circle(imageBuffer, Point(x, y), 3, Scalar(255, 255, 255));
         circle(imageBuffer, Point(x, y), 12, Scalar(255, 255, 255));
-    }*/
+    }
 
+    #pragma omp parallel for
     for (int i = 0; i < height; i++)
-        #pragma omp parallel for
         for (int j = 0; j < width; j++)
         {
             source_pointer[i * width + j].r = mat[3 * (i * width + j) + 2];
@@ -2129,6 +2138,6 @@ void imageProcessing::getStartData(ImageInterface* source, Mat* covs, Mat* cols,
 //    frameNumber++;
 
     delete [] colors;
-    //delete [] resultOfVoting;
-    //delete [] resultOfVotingForBall;
+    delete [] resultOfVoting;
+    delete [] resultOfVotingForBall;
 }

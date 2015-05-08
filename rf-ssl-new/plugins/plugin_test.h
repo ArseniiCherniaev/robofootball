@@ -359,13 +359,14 @@ private:
     int radiusOfRobotSector;
     int radiusOfBallSector;
     int frameNumber;
+    int numberOfThreads;
 
     void getNewData(std::deque<RobotFeatures> *listOfRobots, int cur);
     void getNewData(BallFeatures *ballData);
 public:   
     double threshold;
     imageProcessing(int radiusOfVotingForCentralCircle, int radiusOfVotingForSideCircles, int radiusOfRobotSector, int radiusOfBallSector);
-    //void getNewData(std::deque<RobotFeatures> *blueTeam, std::deque<RobotFeatures> *yellowTeam, BallFeatures *ballData, ImageInterface *source);
+    void getNewData(std::deque<RobotFeatures> *blueTeam, std::deque<RobotFeatures> *yellowTeam, BallFeatures *ballData, ImageInterface *source);
     inline bool colorsAreNear(uchar* mat, int currentElement, Scalar color2);
     inline bool colorsAreNear(uchar* mat, int currentElement, deque<Scalar> color2);
     inline bool colorsAreNear(rgb* source_pointer, int currentElement, Color color2);
