@@ -311,43 +311,6 @@ class imageClust
 
 };
 
-
-//RobotFeatures, BallFeatures - классы, объекты которых будут хранить информацию об объектах
-class RobotFeatures
-{
-public:
-    double x;
-    double y;
-    double phi;
-    std::deque<Scalar> colorOfRegions;
-    int teamID;
-    int robotID;
-
-    RobotFeatures(Hat initialHat, int teamID, int robotID);
-
-    RobotFeatures(Hat initialHat, uchar* mat, int width, int teamID, int robotID);
-
-    RobotFeatures(double r_x, double r_y, Scalar r_colors[], int teamID, int robotID);
-
-private:
-    inline bool colorsAreNear(Scalar color1, Scalar color2);
-    void getColorOfRegions(Hat initialHat);
-};
-
-
-class BallFeatures
-{
-public:
-    double x;
-    double y;
-    Scalar color;
-    bool exists;
-
-    BallFeatures(double b_x, double b_y, Scalar b_color): x(b_x), y(b_y), color(b_color), exists(true) {}
-
-    BallFeatures() {exists = false; x = 0; y = 0; color = Scalar(0, 0, 0);}
-};
-
 class FColor
 {
     bool red[256];
@@ -361,6 +324,23 @@ class FColor
     int maxB;
     int thresh;
 public:
+
+    FColor(const FColor& toCopy) :
+        minR(toCopy.minR),
+        maxR(toCopy.maxR),
+        minG(toCopy.minG),
+        maxG(toCopy.maxG),
+        minB(toCopy.minB),
+        maxB(toCopy.maxB)
+    {
+        for (int i = 0; i < 256; i++)
+        {
+            red[i] = toCopy.red[i];
+            green[i] = toCopy.green[i];
+            blue[i] = toCopy.blue[i];
+        }
+    }
+
     FColor() : minR(256),maxR(-1),minG(256),maxG(-1),minB(256),maxB(-1), thresh(10)
     {
         for (int i = 0; i < 256; i++)
@@ -397,9 +377,41 @@ public:
 
     inline bool contains(int r, int g, int b)
     {
-        return red[r] & green[g] & blue[b];
+        return red[r] && green[g] && blue[b];
     }
 };
+
+
+//RobotFeatures - класс, объекты которого будут хранить информацию о роботах
+class RobotFeatures
+{
+public:
+    double x;
+    double y;
+    double phi;
+    FColor centerColor;
+    FColor red;
+    FColor green;
+    int teamID;
+    int robotID;
+
+    RobotFeatures(double newX, double newY, double newPhi, FColor newCenterColor, FColor newRed,
+                  FColor newGreen, int newTeamID, int newRobotID) :
+        x(newX),
+        y(newY),
+        phi(newPhi),
+        centerColor(newCenterColor),
+        red(newRed),
+        green(newGreen),
+        teamID(newTeamID),
+        robotID(newRobotID)
+    {
+
+    }
+};
+
+
+
 
 class imageProcessing
 {
@@ -410,23 +422,20 @@ private:
     int radiusOfVotingForCentralCircle;
     int radiusOfVotingForSideCircles;
     int radiusOfRobotSector;
-    int radiusOfBallSector;
     int frameNumber;
     int numberOfThreads;
-
-    void getNewData(std::deque<RobotFeatures> *listOfRobots, int cur);
-    void getNewData(BallFeatures *ballData);
+    double h;
+    double C1;
+    double C2;
+    void getNewData(RobotFeatures& robot);
 public:   
     double threshold;
-    imageProcessing(int radiusOfVotingForCentralCircle, int radiusOfVotingForSideCircles, int radiusOfRobotSector, int radiusOfBallSector);
-    void getNewData(std::deque<RobotFeatures> *blueTeam, std::deque<RobotFeatures> *yellowTeam, BallFeatures *ballData, ImageInterface *source);
-    inline bool colorsAreNear(uchar* mat, int currentElement, Scalar color2);
-    inline bool colorsAreNear(uchar* mat, int currentElement, deque<Scalar> color2);
-    inline bool colorsAreNear(rgb* source_pointer, int currentElement, Color color2);
+    imageProcessing(double C1, double C2, double h);
+    void getNewData(std::deque<RobotFeatures> *blueTeam, std::deque<RobotFeatures> *yellowTeam, FColor orange, ImageInterface *source);
     inline bool imageProcessing::colorsAreNear(rgb* source_pointer, int currentElement, deque<Scalar> color2);
-    inline bool isBoardOfRegion(uchar* mat, int i, int j, int width, Scalar color2);
     void calibrate(bool isFirstAlgorithm, ImageInterface* source, FColor* colors);
     void getStartData(ImageInterface* source, FColor* colors, int left, int top, int right, int bottom);
+    void setH(double h);
     ~imageProcessing();
 };
 
@@ -446,6 +455,8 @@ public:
     QList<pixelloc>* m_c;
     QComboBox *teamSelector;
     QSpinBox* robotId;
+    QDoubleSpinBox* heightGetter;
+    QToolButton* openHeightControl;
 
   //-----------------------------
   //local copies of the vartypes tree for better performance
@@ -468,9 +479,6 @@ public:
   ImageInterface * source;
 
   FColor colorsForObjects[5];
-  Mat cols[5];
-  Mat covs[5];
-  bool mask[5];
 
   int setColor;
   int numberOfCountedPoints;
@@ -479,25 +487,32 @@ public:
 
   double robotX;
   double robotY;
-  Scalar colors[5];
+
+  FColor centerColor;
+  FColor redColor;
+  FColor greenColor;
 
   bool isFullImageAlgorithm;
+  bool drawHeightExamples;
   QToolButton* changeAlgorithm;
 
   int left;
   int top;
   int right;
   int bottom;
+
+  double h;
+  double C1;
+  double C2;
   //ƒл€ высчитывани€ усредненного изображени€
   int count;
   Mat avg;
 
   //isFirstRun - в первый раз примен€ем старый метод, далее новый
-  //blueTeam, yellowTeam, currentBall - объекты, хран€ющие в себе информацию об объектах дл€ последующего анализа
+  //blueTeam, yellowTeam - объекты, хран€ющие в себе информацию об объектах дл€ последующего анализа
   bool isFirstRun;
   std::deque<RobotFeatures> blueTeam;
   std::deque<RobotFeatures> yellowTeam;
-  BallFeatures currentBall;
 
   imageProcessing *imProc;
   //-----------------------------
@@ -563,15 +578,16 @@ public slots:
   void threshChanged(int i);
   void setColorModeOnBlue();
   void setColorModeOnYellow();
-  void setColorModeOnPink();
+  void setColorModeOnRed();
   void setColorModeOnGreen();
   void setColorModeOnOrange();
   void startProcess();
   void startSpecifyingRobot();
-  void startSpecifyingBall();
   void setLeftTopCorner();
   void setRightBottomCorner();
   void changeAlgorithmTo();
+  void showHeight();
+  void setHeight();
 };
 
 #endif

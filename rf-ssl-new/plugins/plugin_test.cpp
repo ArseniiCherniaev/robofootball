@@ -9,6 +9,9 @@ testPlugin::testPlugin( FrameBuffer * _buffer, LUT3D * lut, const CameraParamete
     : VisionPlugin ( _buffer ), camera_parameters ( camera_params ), field ( field )
 {
     printf("TEST!\r\n");
+    C1 = 50;
+    C2 = 20;
+    h = 2.2;
     _settings=settings;
     //_have_local_settings=false;
     if ( _settings==0 ) {
@@ -18,7 +21,9 @@ testPlugin::testPlugin( FrameBuffer * _buffer, LUT3D * lut, const CameraParamete
     //printf("testPlugin inti\n");
     cl=new imageClust();
     cl->readCovs();
-    imProc = new imageProcessing(10, 25, 30, 30);
+
+
+    imProc = new imageProcessing(C1, C2, h);
     m_c = new QList<pixelloc>();
     avg = Mat::zeros(480,640,CV_32FC3);
     count=0;
@@ -29,6 +34,7 @@ testPlugin::testPlugin( FrameBuffer * _buffer, LUT3D * lut, const CameraParamete
     right = 640;
     bottom = 480;
     isFullImageAlgorithm = true;
+    drawHeightExamples = false;
 }
 
 
@@ -57,7 +63,7 @@ void testPlugin::mousePressEvent(QMouseEvent *event, pixelloc loc)
                 cout << "Add (" << r << ", " << g << ", " << b << ") as yellow" << endl;
                 break;
         case 2: colorsForObjects[2].add(r,g,b);
-                cout << "Add (" << r << ", " << g << ", " << b << ") as pink" << endl;
+                cout << "Add (" << r << ", " << g << ", " << b << ") as red" << endl;
                 break;
         case 3: colorsForObjects[3].add(r,g,b);
                 cout << "Add (" << r << ", " << g << ", " << b << ") as green" << endl;
@@ -88,54 +94,55 @@ void testPlugin::mousePressEvent(QMouseEvent *event, pixelloc loc)
                     }
                     robotX = loc.x;
                     robotY = loc.y;
-                    colors[0] = Scalar(b, g, r);
+                    centerColor = FColor();
+                    centerColor.add(r,g,b);
                     numberOfCountedPoints++;
                     cout << "Set center of robot as (" << loc.x << ", " << loc.y
                          << "), color of region 0 as (" << r << ", " << g << ", " << b << ")" << endl;
                 }
                 else
                 {
-                    colors[numberOfCountedPoints] = Scalar(b, g, r);
                     cout << "Set color of region "<< numberOfCountedPoints << " as ("
-                         << r << ", " << g << ", " << b << ")" << endl;
-                    numberOfCountedPoints++;
-                    if (numberOfCountedPoints == 5)
+                    << r << ", " << g << ", " << b << ")" << endl;
+                    if (numberOfCountedPoints == 1)
                     {
+                        redColor = FColor();
+                        redColor.add(r,g,b);
+                        numberOfCountedPoints++;
+                    }
+                    else
+                    {
+                        greenColor = FColor();
+                        greenColor.add(r,g,b);
                         setColor = -1;
                         if (teamID == 0)
                         {
                             int i = 0;
                             for (; i < (int)blueTeam.size() && robotID != blueTeam.at(i).robotID; i++);
                             if (i < (int)blueTeam.size())
-                                blueTeam.at(i) = RobotFeatures(robotX, robotY, colors, teamID, robotID);
+                                blueTeam.at(i) = RobotFeatures(robotX, robotY, 0.0, centerColor, redColor, greenColor, teamID, robotID);
                             else
-                                blueTeam.push_back(RobotFeatures(robotX, robotY, colors, teamID, robotID));
+                                blueTeam.push_back(RobotFeatures(robotX, robotY, 0.0, centerColor, redColor, greenColor,teamID, robotID));
                         }
                         else
                         {
                             int i = 0;
                             for (; i < (int)yellowTeam.size() && robotID != yellowTeam.at(i).robotID; i++);
                             if (i < (int)yellowTeam.size())
-                                yellowTeam.at(i) = RobotFeatures(robotX, robotY, colors, teamID, robotID);
+                                yellowTeam.at(i) = RobotFeatures(robotX, robotY, 0.0, centerColor, redColor, greenColor,teamID, robotID);
                             else
-                                yellowTeam.push_back(RobotFeatures(robotX, robotY, colors, teamID, robotID));
+                                yellowTeam.push_back(RobotFeatures(robotX, robotY, 0.0, centerColor, redColor, greenColor,teamID, robotID));
                         }
                         cout << "Finished specifying" << endl;
+                        numberOfCountedPoints = 0;
                     }
                 }
                 break;
-        case 6: cout << "Start matching ball " << endl;
-                cout << "Set center of new ball as (" << loc.x << ", " << loc.y
-                     << "), color of ball as (" << r << ", " << g << ", " << b << ")" << endl;
-                currentBall = BallFeatures(loc.x, loc.y, Scalar(b, g, r));
-                setColor = -1;
-                cout << "Finished specifying" << endl;
-                break;
-        case 7: left = loc.x;
+        case 6: left = loc.x;
                 top = loc.y;
                 cout << "Set Left-Top Corner as (" << loc.x << ", " << loc.y << ")" << endl;
                 break;
-        case 8: right = loc.x;
+        case 7: right = loc.x;
                 bottom = loc.y;
                 cout << "Set Right-Bottom Corner as (" << loc.x << ", " << loc.y << ")" << endl;
                 break;
@@ -154,7 +161,34 @@ ProcessResult testPlugin::process(FrameData * data, RenderOptions * options)
 
     if (isFirstRun)
     {
-        imProc -> calibrate(isFullImageAlgorithm, source, colorsForObjects);
+        if (drawHeightExamples)
+        {
+            Mat img = Mat::zeros(source -> getHeight(),source -> getWidth(),CV_8UC3);
+            uchar* mat = img.data;
+            int width = source -> getWidth();
+            for (int i = 0; i < source -> getHeight(); i++)
+                for (int j = 0; j < source -> getWidth(); j++)
+                {
+                    mat[3 * (i * width + j) + 2] = source_pointer[i * width + j].r;
+                    mat[3 * (i * width + j) + 1] = source_pointer[i * width + j].g;
+                    mat[3 * (i * width + j) + 0] = source_pointer[i * width + j].b;
+                }
+            circle(img, Point(20, 40), C2/h, Scalar(255,255,255));
+            circle(img, Point(20, 40), 2, Scalar(255,255,255));
+            circle(img, Point(100, 40), 4.0/5 * C1/h, Scalar(255,255,255));
+            circle(img, Point(100, 40), 2, Scalar(255,255,255));
+            circle(img, Point(180, 40), C1/h, Scalar(255,255,255));
+            circle(img, Point(180, 40), 2, Scalar(255,255,255));
+            for (int i = 0; i < source -> getHeight(); i++)
+                for (int j = 0; j < source -> getWidth(); j++)
+                {
+                    source_pointer[i * width + j].r = mat[3 * (i * width + j) + 2];
+                    source_pointer[i * width + j].g = mat[3 * (i * width + j) + 1];
+                    source_pointer[i * width + j].b = mat[3 * (i * width + j) + 0];
+                }
+        }
+        else
+            imProc -> calibrate(isFullImageAlgorithm, source, colorsForObjects);
     }
     else
     {
@@ -163,7 +197,7 @@ ProcessResult testPlugin::process(FrameData * data, RenderOptions * options)
         if (isFullImageAlgorithm)
             imProc -> getStartData(source, colorsForObjects, left, top, right, bottom);
         else
-            imProc -> getNewData(&blueTeam, &yellowTeam, &currentBall, source);
+            imProc -> getNewData(&blueTeam, &yellowTeam, colorsForObjects[4], source);
 
         double duration = ( std::clock() - start ) / (double) CLOCKS_PER_SEC;
         cout << duration << endl;
@@ -257,12 +291,6 @@ void testPlugin::startSpecifyingRobot(){
     unlock();
 }
 
-void testPlugin::startSpecifyingBall(){
-    lock();
-    setColor = 6;
-    unlock();
-}
-
 void testPlugin::setColorModeOnBlue(){
     lock();
     if (setColor != 0)
@@ -281,7 +309,7 @@ void testPlugin::setColorModeOnYellow(){
     unlock();
 }
 
-void testPlugin::setColorModeOnPink(){
+void testPlugin::setColorModeOnRed(){
     lock();
     if (setColor != 2)
         setColor = 2;
@@ -311,14 +339,14 @@ void testPlugin::setColorModeOnOrange(){
 void testPlugin::setLeftTopCorner()
 {
     lock();
-    setColor = 7;
+    setColor = 6;
     unlock();
 }
 
 void testPlugin::setRightBottomCorner()
 {
     lock();
-    setColor = 8;
+    setColor = 7;
     unlock();
 }
 
@@ -371,6 +399,26 @@ void testPlugin::threshChanged(int i)
     info->setText(QString::number(cl->thresh));
 }
 
+void testPlugin::showHeight()
+{
+    if (openHeightControl -> text()[0] == 'O')
+    {
+        openHeightControl -> setText("Close height examples");
+        drawHeightExamples = true;
+    }
+    else
+    {
+        openHeightControl -> setText("Open height examples");
+        drawHeightExamples = false;
+    }
+}
+
+void testPlugin::setHeight()
+{
+    h = heightGetter -> value();
+    imProc -> setH(h);
+}
+
 QWidget* testPlugin::getControlWidget()
 {
     sb=new QSpinBox();
@@ -389,12 +437,21 @@ QWidget* testPlugin::getControlWidget()
     robotId->setValue(0);
     robotId->setFixedWidth(40);
 
+    heightGetter = new QDoubleSpinBox();
+    heightGetter->setMaximum(5.0);
+    heightGetter->setMinimum(0);
+    heightGetter->setValue(h);
+    heightGetter->setFixedWidth(40);
+
+    openHeightControl = new QToolButton();
+    openHeightControl -> setText("Open height examples");
+
     QWidget * widget=new QWidget();
     layout=new QVBoxLayout();
     QToolButton * calib=new QToolButton();
     QToolButton * read=new QToolButton();
 
-    QToolButton * pink=new QToolButton();
+    QToolButton * red=new QToolButton();
     QToolButton * green=new QToolButton();
     QToolButton * yellow=new QToolButton();
     QToolButton * blue=new QToolButton();
@@ -405,7 +462,6 @@ QWidget* testPlugin::getControlWidget()
 
     QToolButton * startWork = new QToolButton();
     QToolButton * specifyRobot = new QToolButton();
-    QToolButton * specifyBall = new QToolButton();
 
     changeAlgorithm = new QToolButton();
     changeAlgorithm -> setText("Change to Local Area Algorithm");
@@ -416,12 +472,11 @@ QWidget* testPlugin::getControlWidget()
 
     startWork -> setText("START");
     specifyRobot -> setText("Specify Robot");
-    specifyBall -> setText("Specify Ball");
 
-    pink->setText("Pink");
-    green->setText("Green");
     yellow->setText("Yellow");
     blue->setText("Blue");
+    red->setText("Red");
+    green->setText("Green");
     orange->setText("Orange");
 
     setLeftCorner -> setText("Set Left-Top Corner");
@@ -433,7 +488,7 @@ QWidget* testPlugin::getControlWidget()
 
     connect(blue,SIGNAL(clicked(bool)),this,SLOT(setColorModeOnBlue()));
     connect(yellow,SIGNAL(clicked(bool)),this,SLOT(setColorModeOnYellow()));
-    connect(pink,SIGNAL(clicked(bool)),this,SLOT(setColorModeOnPink()));
+    connect(red,SIGNAL(clicked(bool)),this,SLOT(setColorModeOnRed()));
     connect(green,SIGNAL(clicked(bool)),this,SLOT(setColorModeOnGreen()));
     connect(orange,SIGNAL(clicked(bool)),this,SLOT(setColorModeOnOrange()));
 
@@ -442,14 +497,16 @@ QWidget* testPlugin::getControlWidget()
 
     connect(startWork,SIGNAL(clicked(bool)),this,SLOT(startProcess()));
     connect(specifyRobot,SIGNAL(clicked(bool)),this,SLOT(startSpecifyingRobot()));
-    connect(specifyBall,SIGNAL(clicked(bool)),this,SLOT(startSpecifyingBall()));
 
     connect(changeAlgorithm,SIGNAL(clicked(bool)),this,SLOT(changeAlgorithmTo()));
+
+    connect(openHeightControl,SIGNAL(clicked(bool)), this, SLOT(showHeight()));
+    connect(heightGetter, SIGNAL(valueChanged(double)), this, SLOT(setHeight()));
 
     info=new QLabel();
     info->setText(QString::number(sb->value()));
 
-    layout->addWidget(pink);
+    layout->addWidget(red);
     layout->addWidget(green);
     layout->addWidget(blue);
     layout->addWidget(yellow);
@@ -463,7 +520,9 @@ QWidget* testPlugin::getControlWidget()
     layout -> addWidget(teamSelector);
     layout -> addWidget(robotId);
     layout -> addWidget(specifyRobot);
-    layout -> addWidget(specifyBall);
+
+    layout -> addWidget(heightGetter);
+    layout -> addWidget(openHeightControl);
 
     layout->addWidget(info);
     layout->addWidget(calib);
@@ -1344,26 +1403,24 @@ bool imageClust::checkColor(int num,uchar * color)
 }
 
 
-RobotFeatures::RobotFeatures(double r_x, double r_y, Scalar r_colors[], int teamID, int robotID): x(r_x), y(r_y), phi(0), teamID(teamID), robotID(robotID)
-{
-    colorOfRegions.push_back(r_colors[0]);
-    colorOfRegions.push_back(r_colors[1]);
-    colorOfRegions.push_back(r_colors[2]);
-    colorOfRegions.push_back(r_colors[3]);
-    colorOfRegions.push_back(r_colors[4]);
+imageProcessing::imageProcessing(double C1, double C2, double h)
+{ 
+    radiusOfVotingForCentralCircle = C2/h;
+    radiusOfVotingForSideCircles = C1/h;
+    radiusOfRobotSector = radiusOfVotingForSideCircles + 5;
+    numberOfThreads = 2;
+    this -> C1 = C1;
+    this -> C2 = C2;
+    this -> h = h;
+    frameNumber = 0;
 }
 
-
-
-imageProcessing::imageProcessing(int radiusOfVotingForCentralCircle, int radiusOfVotingForSideCircles, int radiusOfRobotSector, int radiusOfBallSector)
+void imageProcessing::setH(double h)
 {
-    this -> radiusOfBallSector = radiusOfBallSector;
-    this -> radiusOfRobotSector = radiusOfRobotSector;
-    this -> radiusOfVotingForCentralCircle = radiusOfVotingForCentralCircle;
-    this -> radiusOfVotingForSideCircles = radiusOfVotingForSideCircles;
-    this -> threshold = 25;
-    numberOfThreads = 2;
-    frameNumber = 0;
+    this -> h = h;
+    radiusOfVotingForCentralCircle = C2/h;
+    radiusOfVotingForSideCircles = C1/h;
+    radiusOfRobotSector = radiusOfVotingForSideCircles + 5;
 }
 
 imageProcessing::~imageProcessing()
@@ -1371,74 +1428,12 @@ imageProcessing::~imageProcessing()
     delete source_pointer;
 }
 
-//Check if color of point and selected color are similar (for mat)
-//(!) Need to rewrite this code (or delete)
-inline bool imageProcessing::colorsAreNear(uchar *mat, int currentElement, Scalar color2)
-{
-    return (((mat[3 * currentElement + 0] - color2[0]) * (mat[3 * currentElement + 0] - color2[0]) < threshold * threshold) &&
-            ((mat[3 * currentElement + 1] - color2[1]) * (mat[3 * currentElement + 1] - color2[1]) < threshold * threshold) &&
-            ((mat[3 * currentElement + 2] - color2[2]) * (mat[3 * currentElement + 2] - color2[2]) < threshold * threshold))? true : false;
-}
-
-//Check if color of point and selected list of colors are similar
-//(!) Need to rewrite this code (or delete)
-inline bool imageProcessing::colorsAreNear(uchar *mat, int currentElement, deque<Scalar> color2)
-{
-    for (int i = 0; i < (int)color2.size(); i++)
-    {
-        if (((mat[3 * currentElement + 0] - color2.at(i)[0]) * (mat[3 * currentElement + 0] - color2.at(i)[0]) < threshold * threshold) &&
-                ((mat[3 * currentElement + 1] - color2.at(i)[1]) * (mat[3 * currentElement + 1] - color2.at(i)[1]) < threshold * threshold) &&
-                ((mat[3 * currentElement + 2] - color2.at(i)[2]) * (mat[3 * currentElement + 2] - color2.at(i)[2]) < threshold * threshold))
-            return true;
-    }
-    return false;
-}
-
-//Check if color of point and selected color are similar
-//(!) Need to rewrite this code (or delete)
-inline bool imageProcessing::colorsAreNear(rgb* source_pointer, int currentElement, deque<Scalar> color2)
-{
-    for (int i = 0; i < (int)color2.size(); i++)
-    {
-        if (((source_pointer[currentElement].b - color2.at(i)[0]) * (source_pointer[currentElement].b - color2.at(i)[0]) < threshold * threshold) &&
-            ((source_pointer[currentElement].g - color2.at(i)[1]) * (source_pointer[currentElement].g - color2.at(i)[1]) < threshold * threshold) &&
-            ((source_pointer[currentElement].r - color2.at(i)[2]) * (source_pointer[currentElement].r - color2.at(i)[2]) < threshold * threshold))
-            return true;
-    }
-    return false;
-}
-
-inline bool imageProcessing::colorsAreNear(rgb* source_pointer, int currentElement, Color color2)
-{
-    for (int i = 0; i < (int)color2.used; i++)
-    {
-        if (((source_pointer[currentElement].b - color2.bgr[i][0]) * (source_pointer[currentElement].b - color2.bgr[i][0]) < threshold * threshold) &&
-                ((source_pointer[currentElement].g - color2.bgr[i][1]) * (source_pointer[currentElement].g - color2.bgr[i][1]) < threshold * threshold) &&
-                ((source_pointer[currentElement].r - color2.bgr[i][2]) * (source_pointer[currentElement].r - color2.bgr[i][2]) < threshold * threshold))
-            return true;
-    }
-    return false;
-}
-
-//Check if this point is board of region
-//(!) Need to rewrite this code
-inline bool imageProcessing::isBoardOfRegion(uchar *mat, int i, int j, int width, Scalar color2)
-{
-    return ((!colorsAreNear(mat, (i - 1) * width + (j - 1), color2)) ||
-            (!colorsAreNear(mat, (i - 0) * width + (j - 1), color2)) ||
-            (!colorsAreNear(mat, (i + 1) * width + (j - 1), color2)) ||
-            (!colorsAreNear(mat, (i - 1) * width + (j + 0), color2)) ||
-            (!colorsAreNear(mat, (i + 1) * width + (j + 0), color2)) ||
-            (!colorsAreNear(mat, (i - 1) * width + (j + 1), color2)) ||
-            (!colorsAreNear(mat, (i - 0) * width + (j + 1), color2)) ||
-            (!colorsAreNear(mat, (i + 1) * width + (j + 1), color2)))? true : false;
-}
 
 //Find coordinates and angle for both teams of robots (already existed)
-void imageProcessing::getNewData(std::deque<RobotFeatures> *listOfRobots, int cur)
+void imageProcessing::getNewData(RobotFeatures& robot)
 {
-    int oldX = (int)(listOfRobots -> at(cur).x);
-    int oldY = (int)(listOfRobots -> at(cur).y);
+    int oldX = (int)(robot.x);
+    int oldY = (int)(robot.y);
 
     int left = (oldX - radiusOfRobotSector >= 0)? oldX - radiusOfRobotSector : 0;
     int right = (oldX + radiusOfRobotSector < source->getWidth())? oldX + radiusOfRobotSector : source->getWidth() - 1;
@@ -1461,11 +1456,10 @@ void imageProcessing::getNewData(std::deque<RobotFeatures> *listOfRobots, int cu
         }
 
 
-    double **newColorsRecorder = new double*[(int)(listOfRobots->at(cur).colorOfRegions.size())];
+    double newColorsRecorder[3][4];
     #pragma omp parallel for
-    for (int i = 0; i < (int)(listOfRobots->at(cur).colorOfRegions.size()); i++)
+    for (int i = 0; i < 3; i++)
     {
-        newColorsRecorder[i] = new double[4];
         newColorsRecorder[i][0] = 0;
         newColorsRecorder[i][1] = 0;
         newColorsRecorder[i][2] = 0;
@@ -1484,61 +1478,71 @@ void imageProcessing::getNewData(std::deque<RobotFeatures> *listOfRobots, int cu
         for (int j = 1; j < width - 1; j++)
         {
             bool alreadyVoted = false;
+            int r = (int)mat[3 * (i * width + j) + 2];
+            int g = (int)mat[3 * (i * width + j) + 1];
+            int b = (int)mat[3 * (i * width + j) + 0];
 
-            if (colorsAreNear(mat, i * width + j, listOfRobots->at(cur).colorOfRegions.at(0)))
+            if (!alreadyVoted && robot.centerColor.contains(r,g,b))
             {
-                newColorsRecorder[0][0] = (newColorsRecorder[0][0] * newColorsRecorder[0][3] + mat[3 * (i * width + j) + 0])/(newColorsRecorder[0][3] + 1);
-                newColorsRecorder[0][1] = (newColorsRecorder[0][1] * newColorsRecorder[0][3] + mat[3 * (i * width + j) + 1])/(newColorsRecorder[0][3] + 1);
-                newColorsRecorder[0][2] = (newColorsRecorder[0][2] * newColorsRecorder[0][3] + mat[3 * (i * width + j) + 2])/(newColorsRecorder[0][3] + 1);
+                newColorsRecorder[0][0] = (newColorsRecorder[0][0] * newColorsRecorder[0][3] + b)/(newColorsRecorder[0][3] + 1);
+                newColorsRecorder[0][1] = (newColorsRecorder[0][1] * newColorsRecorder[0][3] + g)/(newColorsRecorder[0][3] + 1);
+                newColorsRecorder[0][2] = (newColorsRecorder[0][2] * newColorsRecorder[0][3] + r)/(newColorsRecorder[0][3] + 1);
                 newColorsRecorder[0][3]++;
 
-                if (isBoardOfRegion(mat, i, j, width, listOfRobots->at(cur).colorOfRegions.at(0)))
-                {
-                    if (!alreadyVoted)
-                    {
-                        alreadyVoted = true;
+                alreadyVoted = true;
 
-                        for (int x = max(0, i - radiusOfVotingForCentralCircle); x <= min(i + radiusOfVotingForCentralCircle, height - 1); x++)
-                        {
-                            double r = sqrt((double)radiusOfVotingForCentralCircle * radiusOfVotingForCentralCircle - (x - i) * (x - i));
-                            for (int y = max(0.0, j - r); y <= min(j + r, (double)width - 1); y++)
-                            {
-                                resultOfVoting[x * width + y] += 4;
-                                if (resultOfVoting[x * width + y] > maximum)
-                                    maximum = resultOfVoting[x * width + y];
-                            }
-                        }
+                for (int x = max(0, i - radiusOfVotingForCentralCircle); x <= min(i + radiusOfVotingForCentralCircle, height - 1); x++)
+                {
+                    double r = sqrt((double)radiusOfVotingForCentralCircle * radiusOfVotingForCentralCircle - (x - i) * (x - i));
+                    for (int y = max(0.0, j - r); y <= min(j + r, (double)width - 1); y++)
+                    {
+                        resultOfVoting[x * width + y] += 2;
+                        if (resultOfVoting[x * width + y] > maximum)
+                            maximum = resultOfVoting[x * width + y];
                     }
                 }
             }
 
-            for (int numberOfRegion = 1; numberOfRegion < (int)(listOfRobots -> at(cur).colorOfRegions.size()); numberOfRegion++)
+            if (!alreadyVoted && robot.red.contains(r,g,b))
             {
-                 if (colorsAreNear(mat, i * width + j, listOfRobots->at(cur).colorOfRegions.at(numberOfRegion)))
-                 {
-                     newColorsRecorder[numberOfRegion][0] = (newColorsRecorder[numberOfRegion][0] * newColorsRecorder[numberOfRegion][3] + mat[3 * (i * width + j) + 0])/(newColorsRecorder[numberOfRegion][3] + 1);
-                     newColorsRecorder[numberOfRegion][1] = (newColorsRecorder[numberOfRegion][1] * newColorsRecorder[numberOfRegion][3] + mat[3 * (i * width + j) + 1])/(newColorsRecorder[numberOfRegion][3] + 1);
-                     newColorsRecorder[numberOfRegion][2] = (newColorsRecorder[numberOfRegion][2] * newColorsRecorder[numberOfRegion][3] + mat[3 * (i * width + j) + 2])/(newColorsRecorder[numberOfRegion][3] + 1);
-                     newColorsRecorder[numberOfRegion][3]++;
+                newColorsRecorder[1][0] = (newColorsRecorder[0][0] * newColorsRecorder[0][3] + b)/(newColorsRecorder[0][3] + 1);
+                newColorsRecorder[1][1] = (newColorsRecorder[0][1] * newColorsRecorder[0][3] + g)/(newColorsRecorder[0][3] + 1);
+                newColorsRecorder[1][2] = (newColorsRecorder[0][2] * newColorsRecorder[0][3] + r)/(newColorsRecorder[0][3] + 1);
+                newColorsRecorder[1][3]++;
 
-                     if (isBoardOfRegion(mat, i, j, width, listOfRobots->at(cur).colorOfRegions.at(numberOfRegion)))
-                     {
-                         if (!alreadyVoted)
-                         {
-                             for (int x = max(0, i - radiusOfVotingForSideCircles); x <= min(i + radiusOfVotingForSideCircles, height - 1); x++)
-                             {
-                                 double r = sqrt((double)radiusOfVotingForCentralCircle * radiusOfVotingForCentralCircle - (x - i) * (x - i));
-                                 for (int y = max(0.0, j - r); y <= min(j + r, (double)width - 1); y++)
-                                 {
-                                     resultOfVoting[x * width + y]++;
-                                     if (resultOfVoting[x * width + y] > maximum)
-                                         maximum = resultOfVoting[x * width + y];
-                                 }
-                             }
-                             alreadyVoted = true;
-                         }
-                     }
-                 }
+                alreadyVoted = true;
+
+                for (int x = max(0, i - radiusOfVotingForCentralCircle); x <= min(i + radiusOfVotingForCentralCircle, height - 1); x++)
+                {
+                    double r = sqrt((double)radiusOfVotingForCentralCircle * radiusOfVotingForCentralCircle - (x - i) * (x - i));
+                    for (int y = max(0.0, j - r); y <= min(j + r, (double)width - 1); y++)
+                    {
+                        resultOfVoting[x * width + y] += 1;
+                        if (resultOfVoting[x * width + y] > maximum)
+                            maximum = resultOfVoting[x * width + y];
+                    }
+                }
+            }
+
+            if (!alreadyVoted && robot.green.contains(r,g,b))
+            {
+                newColorsRecorder[2][0] = (newColorsRecorder[0][0] * newColorsRecorder[0][3] + b)/(newColorsRecorder[0][3] + 1);
+                newColorsRecorder[2][1] = (newColorsRecorder[0][1] * newColorsRecorder[0][3] + g)/(newColorsRecorder[0][3] + 1);
+                newColorsRecorder[2][2] = (newColorsRecorder[0][2] * newColorsRecorder[0][3] + r)/(newColorsRecorder[0][3] + 1);
+                newColorsRecorder[2][3]++;
+
+                alreadyVoted = true;
+
+                for (int x = max(0, i - radiusOfVotingForCentralCircle); x <= min(i + radiusOfVotingForCentralCircle, height - 1); x++)
+                {
+                    double r = sqrt((double)radiusOfVotingForCentralCircle * radiusOfVotingForCentralCircle - (x - i) * (x - i));
+                    for (int y = max(0.0, j - r); y <= min(j + r, (double)width - 1); y++)
+                    {
+                        resultOfVoting[x * width + y] += 1;
+                        if (resultOfVoting[x * width + y] > maximum)
+                            maximum = resultOfVoting[x * width + y];
+                    }
+                }
             }
         }
 
@@ -1549,7 +1553,7 @@ void imageProcessing::getNewData(std::deque<RobotFeatures> *listOfRobots, int cu
     {
         for (int j = 0; j < width; j++)
         {
-            if (resultOfVoting[i * width + j] >= 0.9 * maximum)
+            if (resultOfVoting[i * width + j] >= 0.8 * maximum)
             {
                 centerX = (centerX * numberOfCorrectlyVotedPoints + i) / (numberOfCorrectlyVotedPoints + 1);
                 centerY = (centerY * numberOfCorrectlyVotedPoints + j) / (numberOfCorrectlyVotedPoints + 1);
@@ -1566,22 +1570,24 @@ void imageProcessing::getNewData(std::deque<RobotFeatures> *listOfRobots, int cu
     for (int i = 1; i < height - 1; i++)
         for (int j = 1; j < width - 1; j++)
         {
-            bool alreadyVoted = false;
-            for (int numberOfRegion = 1; numberOfRegion < (int)(listOfRobots -> at(cur).colorOfRegions.size()); numberOfRegion++)
-                if (colorsAreNear(mat, i * width + j, listOfRobots->at(cur).colorOfRegions.at(numberOfRegion)))
-                    if (isBoardOfRegion(mat, i, j, width, listOfRobots->at(cur).colorOfRegions.at(numberOfRegion)))
-                        if ((centerX - i) * (centerX - i) + (centerY - j) * (centerY - j) < radiusOfVotingForSideCircles * radiusOfVotingForSideCircles)
-                            if (!alreadyVoted)
-                            {
-                                double x = centerX - i;
-                                double y = j - centerY;
-                                alreadyVoted = true;
-                                double angle = std::atan2(y, x);
-                                angle *= 180/pi;
-                                if (angle < 0)
-                                    angle = 360 + angle;
-                                angles[(int)(angle + 0.5) % 360] = true;
-                            }
+            if ((i - centerX) * (i - centerX) + (j - centerY) * (j - centerY) <= 16.0/25 * radiusOfVotingForSideCircles * radiusOfVotingForSideCircles)
+            {
+                int r = (int)mat[3 * (i * width + j) + 2];
+                int g = (int)mat[3 * (i * width + j) + 1];
+                int b = (int)mat[3 * (i * width + j) + 0];
+                bool alreadyVoted = false;
+                if (!alreadyVoted && (robot.red.contains(r,g,b) || robot.green.contains(r,g,b)))
+                {
+                    double x = centerX - i;
+                    double y = j - centerY;
+                    alreadyVoted = true;
+                    double angle = std::atan2(y, x);
+                    angle *= 180/pi;
+                    if (angle < 0)
+                        angle = 360 + angle;
+                    angles[(int)(angle + 0.5) % 360] = true;
+                }
+            }
         }
 
     int maximumLength = 0;
@@ -1608,130 +1614,30 @@ void imageProcessing::getNewData(std::deque<RobotFeatures> *listOfRobots, int cu
             i  = j - 1;
        }
 
+    //ofstream myfile;
+    //myfile.open ("example.txt");
+    //for (int i = 0; i < 360; i++)
+    //    myfile << i << " - " << angles[i] << endl;
+    //myfile.close();
+
     double direction = (rightBoard > leftBoard)? (rightBoard + leftBoard)/2.0 : (360 + rightBoard + leftBoard)/2.0;
 
     line(imageBuffer, Point(left + centerY + 30.0 * std::sin(direction * pi / 180), top + centerX - 30.0 * std::cos(direction * pi / 180)), Point(left + centerY, top + centerX), Scalar(255, 255, 255));
     circle(imageBuffer, Point(left + centerY, top + centerX), 3, Scalar(255, 255, 255));
     circle(imageBuffer, Point(left + centerY, top + centerX), 12, Scalar(255, 255, 255));
+    //circle(imageBuffer, Point(left + centerY, top + centerX), 4.0/5 * radiusOfVotingForSideCircles, Scalar(255, 255, 255));
 
-    for (int i = 0; i < (int)(listOfRobots->at(cur).colorOfRegions.size()); i++)
-    {
-//        listOfRobots-> at(cur).colorOfRegions.at(i) = Scalar(newColorsRecorder[i][0], newColorsRecorder[i][1], newColorsRecorder[i][2]);
-        delete [] newColorsRecorder[i];
-    }
+    //ЗДЕСЬ МОЖНО ДОБАВИТЬ КОД ДЛЯ ПЕРЕСЧЕТА ЦВЕТОВ
 
-    listOfRobots -> at(cur).x = left + centerY;
-    listOfRobots -> at(cur).y = top + centerX;
-    listOfRobots -> at(cur).phi = direction * pi / 180;
-    delete [] newColorsRecorder;
+    robot.x = left + centerY;
+    robot.y = top + centerX;
+    robot.phi = direction * pi / 180;
     delete [] resultOfVoting;
 }
 
-//Find coordinates for ball
-void imageProcessing::getNewData(BallFeatures *ballData)
-{
-    int oldX = (int)(ballData -> x);
-    int oldY = (int)(ballData -> y);
-
-    int left = (oldX - radiusOfBallSector >= 0)? oldX - radiusOfBallSector : 0;
-    int right = (oldX + radiusOfBallSector < source->getWidth())? oldX + radiusOfBallSector : source->getWidth() - 1;
-    int top = (oldY - radiusOfBallSector >= 0)? oldY - radiusOfBallSector : 0;
-    int bottom = (oldY + radiusOfBallSector < source->getHeight())? oldY + radiusOfBallSector : source->getHeight() - 1;
-
-    int height = bottom - top + 1;
-    int width = right - left + 1;
-
-    Mat img=Mat::zeros(height, width,CV_8UC3);
-    uchar* mat = img.data;
-
-    #pragma omp parallel for
-    for (int i=top;i<=bottom;++i)
-        for (int j=left;j<=right;++j)
-        {
-            mat[3*((i - top)*width+(j - left))+2]=source_pointer[i*source->getWidth()+j].r;
-            mat[3*((i - top)*width+(j - left))+1]=source_pointer[i*source->getWidth()+j].g;
-            mat[3*((i - top)*width+(j - left))+0]=source_pointer[i*source->getWidth()+j].b;
-        }
-
-    double newColorRecorder[4];
-    newColorRecorder[0] = 0;
-    newColorRecorder[1] = 0;
-    newColorRecorder[2] = 0;
-    newColorRecorder[3] = 0;
-
-    int* resultOfVoting = new int[height * width];
-
-    #pragma omp parallel for
-    for (int i = 0; i < height; i++)
-        for (int j = 0; j < width; j++)
-            resultOfVoting[i * width + j] = 0;
-    int maximum = 0;
-
-
-    int numberOfPoints = 0;
-    for (int i = 1; i < height - 1; i++)
-        for (int j = 1; j < width - 1; j++)
-        {
-            bool alreadyVoted = false;
-
-            if (colorsAreNear(mat, i * width + j, ballData -> color))
-            {
-                numberOfPoints++;
-                newColorRecorder[0] = (newColorRecorder[0] * newColorRecorder[3] + mat[3 * (i * width + j) + 0])/(newColorRecorder[3] + 1);
-                newColorRecorder[1] = (newColorRecorder[1] * newColorRecorder[3] + mat[3 * (i * width + j) + 1])/(newColorRecorder[3] + 1);
-                newColorRecorder[2] = (newColorRecorder[2] * newColorRecorder[3] + mat[3 * (i * width + j) + 2])/(newColorRecorder[3] + 1);
-                newColorRecorder[3]++;
-
-                if (isBoardOfRegion(mat, i, j, width, ballData -> color))
-                {
-                    if (!alreadyVoted)
-                    {
-                        alreadyVoted = true;
-
-                        for (int x = max(0, i - radiusOfVotingForCentralCircle); x <= min(i + radiusOfVotingForCentralCircle, height - 1); x++)
-                        {
-                            double r = sqrt((double)radiusOfVotingForCentralCircle * radiusOfVotingForCentralCircle - (x - i) * (x - i));
-                            for (int y = max(0.0, j - r); y <= min(j + r, (double)width - 1); y++)
-                            {
-                                resultOfVoting[x * width + y] += 1;
-                                if (resultOfVoting[x * width + y] > maximum)
-                                    maximum = resultOfVoting[x * width + y];
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-    double centerX = 0;
-    double centerY = 0;
-    int numberOfCorrectlyVotedPoints = 0;
-    for (int i = 0; i < height; i++)
-    {
-        for (int j = 0; j < width; j++)
-        {
-            if (resultOfVoting[i * width + j] == maximum)
-            {
-                centerX = (centerX * numberOfCorrectlyVotedPoints + i) / (numberOfCorrectlyVotedPoints + 1);
-                centerY = (centerY * numberOfCorrectlyVotedPoints + j) / (numberOfCorrectlyVotedPoints + 1);
-                numberOfCorrectlyVotedPoints++;
-            }
-        }
-    }
-
-    circle(imageBuffer, Point(left + centerX, top + centerY), 3, Scalar(255, 255, 255));
-    circle(imageBuffer, Point(left + centerX, top + centerY), 12, Scalar(255, 255, 255));
-
-    //ballData -> color = Scalar(newColorRecorder[0], newColorRecorder[1], newColorRecorder[2]);
-    ballData -> x = left + centerY;
-    ballData -> y = top + centerX;
-
-    delete [] resultOfVoting;
-
-}
 
 //Find coordinates and angle for both teams of robots (already existed) and ball
-void imageProcessing::getNewData(std::deque<RobotFeatures> *blueTeam, std::deque<RobotFeatures> *yellowTeam, BallFeatures *ballData, ImageInterface *source)
+void imageProcessing::getNewData(std::deque<RobotFeatures> *blueTeam, std::deque<RobotFeatures> *yellowTeam, FColor orange, ImageInterface *source)
 {
     omp_set_num_threads(numberOfThreads);
     this -> source = source;
@@ -1749,15 +1655,31 @@ void imageProcessing::getNewData(std::deque<RobotFeatures> *blueTeam, std::deque
             mat[3*(i*640+j)+1]=source_pointer[i*source->getWidth()+j].g;
             mat[3*(i*640+j)+0]=source_pointer[i*source->getWidth()+j].b;
         }
-    if (ballData->exists)
-        getNewData(ballData);
+
+    blur(imageBuffer, imageBuffer, Size(3, 3));
 
     for (int i = 0; i < (int)(blueTeam -> size()); i++)
-       getNewData(blueTeam, i);
+       getNewData(blueTeam -> at(i));
 
     for (int i = 0; i < (int)(yellowTeam -> size()); i++)
-        getNewData(yellowTeam, i);
+        getNewData(yellowTeam -> at(i));
 
+    double ballX = 0.0;
+    double ballY = 0.0;
+    int num = 0;
+    #pragma omp parallel for
+    for (int i=0;i<480;++i)
+        for (int j=0;j<640;++j)
+        {
+            if (orange.contains((int)mat[3 * (i * 640 + j) + 2], (int)mat[3 * (i * 640 + j) + 1], (int)mat[3 * (i * 640 + j) + 0]))
+            {
+                ballX = (ballX * num + i)/(num + 1);
+                ballY = (ballY * num + j)/(num + 1);
+                num++;
+            }
+        }
+    circle(imageBuffer, Point(ballY, ballX), 3, Scalar(255, 255, 255));
+    circle(imageBuffer, Point(ballY, ballX), 12, Scalar(255, 255, 255));
 
     #pragma omp parallel for
     for (int i=0;i<480;++i)
@@ -1767,13 +1689,13 @@ void imageProcessing::getNewData(std::deque<RobotFeatures> *blueTeam, std::deque
             source_pointer[i*source->getWidth()+j].g= mat[3*(i*640+j)+1];
             source_pointer[i*source->getWidth()+j].b= mat[3*(i*640+j)+0];
         }
-    stringstream ss;
-    ss << frameNumber;
-    string str = ss.str();
-    string name = string("record/") + str + string(".png");
+    //stringstream ss;
+    //ss << frameNumber;
+    //string str = ss.str();
+    //string name = string("record/") + str + string(".png");
 
-    cvSaveImage(name.c_str(), &(IplImage(imageBuffer)));
-    frameNumber++;
+    //cvSaveImage(name.c_str(), &(IplImage(imageBuffer)));
+    //frameNumber++;
 }
 
 //Help find colors for FullImage Algorithm(!)
@@ -1817,7 +1739,7 @@ void imageProcessing::calibrate(bool isFirstAlgorithm, ImageInterface* source, F
                     mat[3 *(i * width + j) + 0] = 0;
                 }
 
-                //pink
+                //red
                 if (colors[2].contains(r,g,b))
                 {
                     mat[3 *(i * width + j) + 2] = 255;
