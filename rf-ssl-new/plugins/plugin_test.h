@@ -357,27 +357,37 @@ public:
         int maxC = min(max(maxR, r) + thresh, 255);
         for (int i = minC; i <= maxC; i++)
             red[i] = true;
-        minR = minC;
-        maxR = maxC;
+        minR = min(minR, r);
+        maxR = max(maxR, r);
 
         minC = max(min(minG, g) - thresh, 0);
         maxC = min(max(maxG, g) + thresh, 255);
         for (int i = minC; i <= maxC; i++)
             green[i] = true;
-        minG = minC;
-        maxG = maxC;
+        minG = min(minG, g);
+        maxG = max(maxG, g);
 
         minC = max(min(minB, b) - thresh, 0);
         maxC = min(max(maxB, b) + thresh, 255);
         for (int i = minC; i <= maxC; i++)
             blue[i] = true;
-        minB = minC;
-        maxB = maxC;
+        minB = min(minB, b);
+        maxB = max(maxB, b);
     }
 
     inline bool contains(int r, int g, int b)
     {
         return red[r] && green[g] && blue[b];
+    }
+
+    friend ostream& operator<<(ostream& os, const FColor& f)
+    {
+        os << "---" << endl;
+        os << f.minR << "-" << f.maxR << endl;
+        os << f.minG << "-" << f.maxG << endl;
+        os << f.minB << "-" << f.maxB << endl;
+        os << "---" << endl;
+        return os;
     }
 };
 
@@ -427,15 +437,16 @@ private:
     double h;
     double C1;
     double C2;
+    double T;
     void getNewData(RobotFeatures& robot);
 public:   
     double threshold;
     imageProcessing(double C1, double C2, double h);
-    void getNewData(std::deque<RobotFeatures> *blueTeam, std::deque<RobotFeatures> *yellowTeam, FColor orange, ImageInterface *source);
-    inline bool imageProcessing::colorsAreNear(rgb* source_pointer, int currentElement, deque<Scalar> color2);
-    void calibrate(bool isFirstAlgorithm, ImageInterface* source, FColor* colors);
-    void getStartData(ImageInterface* source, FColor* colors, int left, int top, int right, int bottom);
+    void getNewData(std::vector<RobotFeatures>& robots, FColor orange, ImageInterface *source, int left, int top, int right, int bottom);
+    void calibrate(ImageInterface* source, FColor* colors);
+    vector<pair<double, double>> getStartData(ImageInterface* source, FColor* colors, int left, int top, int right, int bottom);
     void setH(double h);
+    RobotFeatures coordinatesToFullStatistic(double x, double y, ImageInterface *source, FColor* colors);
     ~imageProcessing();
 };
 
@@ -453,10 +464,9 @@ public:
     imageClust * cl;
     QSpinBox * sb;
     QList<pixelloc>* m_c;
-    QComboBox *teamSelector;
-    QSpinBox* robotId;
     QDoubleSpinBox* heightGetter;
     QToolButton* openHeightControl;
+    QToolButton * startWork;
 
   //-----------------------------
   //local copies of the vartypes tree for better performance
@@ -482,17 +492,7 @@ public:
 
   int setColor;
   int numberOfCountedPoints;
-  int teamID;
-  int robotID;
 
-  double robotX;
-  double robotY;
-
-  FColor centerColor;
-  FColor redColor;
-  FColor greenColor;
-
-  bool isFullImageAlgorithm;
   bool drawHeightExamples;
   QToolButton* changeAlgorithm;
 
@@ -510,10 +510,9 @@ public:
 
   //isFirstRun - в первый раз примен€ем старый метод, далее новый
   //blueTeam, yellowTeam - объекты, хран€ющие в себе информацию об объектах дл€ последующего анализа
-  bool isFirstRun;
-  std::deque<RobotFeatures> blueTeam;
-  std::deque<RobotFeatures> yellowTeam;
-
+  int currentStep;
+  std::vector<pair<double, double>> robotCoords;
+  std::vector<RobotFeatures> robots;
   imageProcessing *imProc;
   //-----------------------------
 
@@ -582,10 +581,8 @@ public slots:
   void setColorModeOnGreen();
   void setColorModeOnOrange();
   void startProcess();
-  void startSpecifyingRobot();
   void setLeftTopCorner();
   void setRightBottomCorner();
-  void changeAlgorithmTo();
   void showHeight();
   void setHeight();
 };
